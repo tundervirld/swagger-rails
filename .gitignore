@@ -82,7 +82,7 @@ pickle-email-*.html
 *.ruby-version
 .ruby-version
 *.ruby-version
-*Gemfile.lock
+#*Gemfile.lock
 shared/*
 public/assets/*
 public/uploads/*

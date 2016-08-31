@@ -18,7 +18,7 @@ gem 'puma', '~> 3.0'
 # gem 'capistrano-rails', group: :development
 
 # Use Rack CORS for handling Cross-Origin Resource Sharing (CORS), making cross-origin AJAX possible
-# gem 'rack-cors'
+gem 'rack-cors'
 
 group :development, :test do
   # Call 'byebug' anywhere in the code to stop execution and get a debugger console
@@ -48,4 +48,4 @@ gem 'active_model_serializers'
 #gem 'rack-cors'
 
 #To protect our API from DDoS, brute force attacks, hammering, or even to monetize with paid usage limits
-#gem 'rack-attack'
+gem 'rack-attack'

@@ -122,14 +122,14 @@ El JSON de respuesta que tendríamos para el usuario con ID 1:
 ```json
 #http://localhost:3001/users/1
 {
-  data: {
-    id: "1",
-    type: "users",
-    attributes: {
-      name: "a",
-      email: null,
-      state: null,
-      is-active: false
+  "data": {
+    "id": "1",
+    "type": "users",
+    "attributes": {
+      "name": "a",
+      "email": null,
+      "state": null,
+      "is-active": false
     }
   }
 }
@@ -139,15 +139,110 @@ El JSON de respuesta que tendríamos para el usuario con ID 1:
 ## Permitir llamadas cruzadas **Cross domain calls**
 Por defecto las API no permiten que se realizen llamadas desde otros dominios, por temas de seguridad, para nuestro caso si implementamos una sencilla página web que realize una conexión mediante AJAX a nuestra API, no Permitirá conexiones cruzadas.
 
+Llamada AJAX **sin especificar** "Content Type"
+![cross-site-no-content-type](https://s26.postimg.org/g92cwxlkp/cross_site_no_content_type.png)
+
+Llamada AJAX **especificando** "Content Type"
+![cross-site](https://s26.postimg.org/my8wcy6wp/cross_site.png)
+
+Para poder permitir conexiones desde otro dominio, es necesario usar la gema ![Cors](https://github.com/cyu/rack-cors).
+
+Agregar la gema Cors a Gemfile
+```Ruby 
+#Gema para permitir conexiones de otros dominios Coss Site
+gem 'rack-cors'
+```
+Para instalar las dependencias de gema
+```cmd 
+bundle install
+```
+Finalmente para habilitar el funcionamient de CORS y hacer nuestra API publica a otros dominios, es necesario agregar en nuestro archivo de configuración de aplicación:
+```ruby
+#congig/application
+#For a public API, enable Cross-Origin Resource Sharing (CORS)
+config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins '*'
+      resource '*', :headers => :any, :methods => [:get, :post, :options]
+    end
+end
+```
+Si visualizamos ahora la espuesta de la API, tendrémos algo como lo siguiente:
+![response_cross_site_enabled](https://s26.postimg.org/d3hr6q2yh/response_cross_site_enabled.png)
+
 
 ## Limitando las peticiones, bloqueando conexiones
 Para proteger nuestra API de ataques comunes como DDOS, Ataques a fuerza bruta, multiples solicitudes de servicios y los costos que esto implicaría, es necesario utilizar algún tipo de protección, la gema [Rack::Attack](https://github.com/kickstarter/rack-attack) nos facilita la implementación de este tipo de protección.
 
+Agregar la gema rack-attack a Gemfile
+```Ruby 
+#Gema para permitir conexiones de otros dominios Coss Site
+gem 'rack-attack'
+```
+Para instalar las dependencias de gema
+```cmd 
+bundle install
+```
+Para habilitar el funcionamient de Rack Attack, es necesario agregar en nuestro archivo de configuración de aplicación:
+```ruby
+#congig/application
+#Protect To protect our API from DDoS, brute force attacks, hammering, or even to monetize with paid usage limits
+config.middleware.use Rack::Attack
+```
+Para la configuración de esta Gema, es necesario crear un acrhivo de sonfiguración *rack_attack.rb* que será incluido en los **initializers** de nuestra aplicación, para que sean cargados al momento de arrancar la aplicación `config/initializers/rack_attack.rb`.
+```ruby
+class Rack::Attack
+  # `Rack::Attack` is configured to use the `Rails.cache` value by default,
+  # but you can override that by setting the `Rack::Attack.cache.store` value
+  Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
+
+  # Allow all local traffic
+  # Excluir de la protección a la IP local
+  # Always allow requests from localhost
+  # (blocklist & throttles are skipped)
+  self.safelist('allow from localhost') do |req|
+    # Requests are allowed if the return value is truthy
+    '127.0.0.1' == req.ip || '::1' == req.ip
+  end
+
+  # Allow an IP address to make 5 requests every 5 seconds
+  # Permitir hasta 5 llamadas en 1sg, para la misma IP
+  self.throttle('req/ip', limit: 5, period: 1) do |req|
+    req.ip
+  end
+
+  # Send the following response to throttled clients
+  # Mensaje  de respuesta para el cliente que esta realizando muchas llamadas a la API.
+  self.throttled_response = lambda do |env|
+    now = Time.now
+    match_data = env['rack.attack.match_data']
+    retry_after = (match_data || {})[:period]
+    rate_limit_reset =  (now + (match_data[:period] - now.to_i % match_data[:period]))
+
+    headers = {
+      'X-RateLimit-Limit' => match_data[:limit].to_s,
+      'X-RateLimit-Remaining' => '0',
+      'X-RateLimit-Reset' => rate_limit_reset.to_s,
+      'Content-Type' => 'application/json',
+      'Retry-After' => retry_after.to_s
+    }
+
+    [ 429, headers, [
+      {:error => "Throttle limit reached. Retry later."}.to_json
+      ]
+    ]
+  end
+end
+```
 
 ### Descargar y Revisar...
 Para revisar el proyecto de manera local, basta con:
 ```cmd
 git clone https://github.com/tundervirld/swagger-rails.git
 cd swagger-rails
-rails s
+bundle install
+rake db:create
+rake db:migrate
+rake db:seed
+rails s -b 0.0.0.0 -p3001
 ```

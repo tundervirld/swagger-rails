@@ -27,13 +27,13 @@ module SwaggerRails
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
 	
-	#For a public API, enable Cross-Origin Resource Sharing (CORS)
-  #  config.middleware.insert_before 0, "Rack::Cors" do
-  #    allow do
-  #      origins '*'
-  #      resource '*', :headers => :any, :methods => [:get, :post, :options]
-  #    end
-  #  end
+	  #For a public API, enable Cross-Origin Resource Sharing (CORS)
+    config.middleware.insert_before 0, Rack::Cors do
+      allow do
+        origins '*'
+        resource '*', :headers => :any, :methods => [:get, :post, :options]
+      end
+    end
     
   #Protect To protect our API from DDoS, brute force attacks, hammering, or even to monetize with paid usage limits
   #config.middleware.use Rack::Attack

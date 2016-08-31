@@ -48,4 +48,4 @@ gem 'active_model_serializers'
 #gem 'rack-cors'
 
 #To protect our API from DDoS, brute force attacks, hammering, or even to monetize with paid usage limits
-#gem 'rack-attack'
+gem 'rack-attack'

@@ -36,7 +36,7 @@ module SwaggerRails
     end
     
   #Protect To protect our API from DDoS, brute force attacks, hammering, or even to monetize with paid usage limits
-  #config.middleware.use Rack::Attack
+  config.middleware.use Rack::Attack
 
   end
 end
